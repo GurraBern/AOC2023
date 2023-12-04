@@ -16,9 +16,10 @@ lazy_static! {
 
 fn main() {
     let file = File::open("input.txt").unwrap();
-
     problem_1(file);
-    // problem_2(file, color_counts);
+
+    let file = File::open("input.txt").unwrap();
+    problem_2(file);
 }
 
 fn problem_1(file: File) {
@@ -35,6 +36,38 @@ fn problem_1(file: File) {
         }
 
         game_count += 1;
+    }
+
+    println!("result: {}", result);
+}
+
+fn problem_2(file: File) {
+    let reader = BufReader::new(file);
+
+    let mut result = 0;
+    for line in reader.lines() {
+        let mut line = line.unwrap().to_string();
+        if let Some(colon_index) = line.find(':') {
+            line.drain(..=colon_index);
+        }
+
+        let mut needed_colors: HashMap<&str,i32> = [("red", 0),("green", 0),("blue", 0)].iter().cloned().collect();
+        let rounds: Vec<&str> = line.split(';').map(|game| game.trim()).collect();
+        for round in rounds {
+            let pairs: Vec<&str> = round.split(',').map(|pair| pair.trim()).collect();
+            for pair in pairs {
+                let number_and_color: Vec<&str> = pair.split_whitespace().collect();
+                let number = number_and_color[0].parse::<i32>().unwrap();
+                let color = number_and_color[1];
+
+                let amount = needed_colors[color];
+                if amount < number {
+                    needed_colors.insert(color, number);
+                }
+            }
+        }
+
+        result += needed_colors.values().cloned().fold(1, |accumulator, x| accumulator * x);
     }
 
     println!("result: {}", result);
