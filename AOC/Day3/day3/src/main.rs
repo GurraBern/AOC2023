@@ -4,11 +4,15 @@ use std::io::{BufRead, BufReader};
 
 fn main() {
     let file = File::open("input.txt").unwrap();
-
     problem_1(file);
+
+    //let file = File::open("input.txt").unwrap();
+    //problem_2(file);
 }
 
 fn problem_1(file: File) {
+    //let problem1solver = Problem1Solver;
+
     let reader = BufReader::new(file);
     let mut grid: Vec<Vec<char>> = create_grid(reader);
 
@@ -16,7 +20,7 @@ fn problem_1(file: File) {
     for (row_index,row) in grid.iter().enumerate() {
         for (column_index,&column) in row.iter().enumerate() {
             if !column.is_numeric() && column != '.' {
-                check_neighbouring_tiles(&mut number_positions, &grid, row_index, column_index);
+                Problem1Solver.template_method(&mut number_positions, &grid, row_index, column_index);
             }
         }
     }
@@ -38,11 +42,47 @@ fn problem_1(file: File) {
         }
     }
 
-    println!("done {}", result);
+    println!("Problem 1 Answer:  {}", result);
 }
 
-//TODO Hashmap with row and then tuple with start and end position
-fn check_neighbouring_tiles(number_positions: &mut HashMap<usize, Vec<(usize, usize)>>, grid: &Vec<Vec<char>>, row: usize, column: usize) {
+/*fn problem_2(file: File) {
+    let reader = BufReader::new(file);
+    let mut grid: Vec<Vec<char>> = create_grid(reader);
+
+    let mut number_positions: HashMap<usize, Vec<(usize, usize)>> = HashMap::new();
+    for (row_index,row) in grid.iter().enumerate() {
+        for (column_index,&column) in row.iter().enumerate() {
+            if !column.is_numeric() && column != '.' {
+                check_neighbouring_tiles(&mut number_positions, &grid, row_index, column_index);
+            }
+        }
+    }
+
+    let mut result = 0;
+    for (row_pos, positions) in &number_positions {
+        let mut current_count = 1;
+
+        for pos in positions {
+            if let Some(row) = grid.get(*row_pos) {
+                let start_column = pos.0;
+                let end_column = pos.1;
+
+                if let Some(substring) = row.get(start_column..end_column) {
+                    let substring_string: String = substring.iter().collect();
+                    if let Ok(number) = substring_string.parse::<i32>() {
+                        current_count *= number;
+                    }
+                }
+            }
+        }
+        result += current_count;
+    }
+
+    println!("Problem 2 Answer:  {}", result);
+}
+ */
+
+/*fn check_neighbouring_tiles(number_positions: &mut HashMap<usize, Vec<(usize, usize)>>, grid: &Vec<Vec<char>>, row: usize, column: usize) {
     let directions = [
         (-1, -1), (-1, 0), (-1, 1),
         (0, -1), (0, 1),
@@ -63,8 +103,9 @@ fn check_neighbouring_tiles(number_positions: &mut HashMap<usize, Vec<(usize, us
         }
     }
 }
+ */
 
-fn include_directions(number_positions: &mut HashMap<usize, Vec<(usize, usize)>>, grid: &Vec<Vec<char>>, row: usize, column: usize) {
+fn combine_gears(number_positions: &mut HashMap<usize, Vec<(usize, usize)>>, grid: &Vec<Vec<char>>, row: usize, column: usize) {
     let start_pos = find_position(grid, row, column, -1);
     let end_pos = find_position(grid, row, column, 1);
 
@@ -79,7 +120,7 @@ fn include_directions(number_positions: &mut HashMap<usize, Vec<(usize, usize)>>
 
 fn find_position(grid: &Vec<Vec<char>>, row: usize, column: usize, direction: isize) -> usize {
     let mut pos = column as isize;
-    while pos >= 0 {
+    while pos >= 0 && pos < grid.get(0).unwrap().len() as isize {
         let char = grid[row][pos as usize];
         if !char.is_numeric() {
             if direction == -1 {
@@ -104,4 +145,48 @@ fn create_grid(reader: BufReader<File>) -> Vec<Vec<char>> {
     }
 
     grid
+}
+
+trait GearTemplate {
+    fn include_numbers(&self, number_positions: &mut HashMap<usize, Vec<(usize, usize)>>, grid: &Vec<Vec<char>>, row: usize, column: usize);
+
+    fn template_method(&self, number_positions: &mut HashMap<usize, Vec<(usize, usize)>>, grid: &Vec<Vec<char>>, row: usize, column: usize) {
+
+        let directions = [
+            (-1, -1), (-1, 0), (-1, 1),
+            (0, -1), (0, 1),
+            (1, -1), (1, 0), (1, 1)
+        ];
+
+        for (row_offset, col_offset) in &directions {
+            let new_row = row as isize + *row_offset;
+            let new_col = column as isize + *col_offset;
+
+            if new_row >= 0 && new_row < grid.len() as isize &&
+                new_col >= 0 && new_col < grid[0].len() as isize {
+                let neighbor_value = grid[new_row as usize][new_col as usize];
+
+                if neighbor_value.is_numeric() {
+                    self.include_numbers(number_positions, grid, new_row as usize, new_col as usize);
+                }
+            }
+        }
+    }
+}
+
+struct Problem1Solver;
+
+impl GearTemplate for Problem1Solver {
+    fn include_numbers(&self, number_positions: &mut HashMap<usize, Vec<(usize, usize)>>, grid: &Vec<Vec<char>>, row: usize, column: usize) {
+        let start_pos = find_position(grid, row, column, -1);
+        let end_pos = find_position(grid, row, column, 1);
+
+        if let Some(current_list) = number_positions.get_mut(&row) {
+            if !current_list.contains(&(start_pos, end_pos)) {
+                current_list.push((start_pos, end_pos));
+            }
+        } else {
+            number_positions.insert(row, vec![(start_pos, end_pos)]);
+        }
+    }
 }
